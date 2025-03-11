@@ -1,9 +1,13 @@
 <?php
 
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\ReceiptController;
+use App\Livewire\Admin\Dashboard;
+
 use App\Livewire\CashierDashboard;
 use Illuminate\Support\Facades\Route;
+use App\Livewire\Admin\ProductManager;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReceiptController;
 
 // Redirect ke halaman login jika mengakses root
 Route::get('/', function () {
@@ -18,11 +22,13 @@ Route::middleware([
 ])->group(function () {
 
     // Dashboard
+    Route::get('/admin/dashboard', Dashboard::class)->name('admin.dashboard');
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
 
     // Produk
+    Route::get('admin/products', ProductManager::class)->name('admin.products');
     Route::resource('products', ProductController::class)->except(['show']);
 
     // Kasir

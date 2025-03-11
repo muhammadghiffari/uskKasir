@@ -41,6 +41,7 @@
                         class="w-full border-gray-300 rounded-lg p-2">
                 </div>
 
+
                 <!-- Stok -->
                 <div class="mb-4">
                     <label for="stock" class="block text-sm font-medium text-gray-700">Stock</label>

@@ -17,10 +17,13 @@ class ProductController extends Controller
     public function create()
     {
         $categories = Category::all(); // Ambil semua kategori
-        return view('products.create', compact('categories'));
+        $products = Product::all(); // Ambil semua produk
+
+        return view('products.create', compact('categories', 'products'));
     }
 
-public function edit($id)
+
+    public function edit($id)
 {
     $product = Product::findOrFail($id);
     $categories = Category::all(); // Pastikan kategori diambil dari database
