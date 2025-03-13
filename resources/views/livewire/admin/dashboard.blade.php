@@ -122,8 +122,7 @@
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
                     <h3 class="text-lg font-semibold mb-4">Stats Summary</h3>
                     <p class="mb-2"><span class="font-medium">Total Sales:</span> Rp {{ number_format($totalSales, 0, ',', '.') }}</p>
-                    Rp
-                    {{ $recentTransactions->count() > 0 ? number_format($totalSales / \App\Models\Transaction::count(), 0, ',', '.') : 0 }}
+                    <p><span class="font-medium">Recent Sales:</span> Rp {{ $recentTransactions->count() > 0 ? number_format($totalSales / \App\Models\Transaction::count(), 0, ',', '.') : 0 }}</p>
                 </div>
             </div>
         </div>

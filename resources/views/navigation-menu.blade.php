@@ -9,31 +9,37 @@
                         <x-application-mark class="block h-9 w-auto" />
                     </a>
                 </div>
-
-                <!-- Navigation Links -->
+                {{-- <!-- Dashboard Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
+                        {{ __('Main Dashboard') }}
                     </x-nav-link>
-                </div>
-                <!-- Products Links -->
+                </div> --}}
+                <!-- Admin Dashboard Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link href="{{ route('products.index') }}" :active="request()->routeIs('products.index')">
-                        {{ __('Products') }}
+                    <x-nav-link href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.dashboard')">
+                        {{ __('Admin Dashboard') }}
                     </x-nav-link>
                 </div>
-                {{-- <!-- Kasir Links -->
+                <!-- Kasir Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link href="{{ route('kasir') }}" :active="request()->routeIs('kasir')">
                         {{ __('Kasir') }}
                     </x-nav-link>
-                </div> --}}
-                {{-- <!-- Transaksi Links -->
+                </div>
+                {{-- <!-- Products Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link href="{{ route('transactions.index') }}" :active="request()->routeIs('transactions.index')">
-                        {{ __('Transaksi') }}
+                    <x-nav-link href="{{ route('products.index') }}" :active="request()->routeIs('products.index')">
+                        {{ __('Products') }}
                     </x-nav-link>
                 </div> --}}
+                <!-- Admin Products Links -->
+                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                    <x-nav-link href="{{ route('admin.products') }}" :active="request()->routeIs('admin.products')">
+                        {{ __('Products') }}
+                    </x-nav-link>
+                </div>
+
             </div>
 
             <div class="hidden sm:flex sm:items-center sm:ms-6">

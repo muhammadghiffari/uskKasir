@@ -121,6 +121,7 @@ class ProductManager extends Component
         $this->showDeleteModal = false;
     }
 
+
     public function render()
     {
         $products = Product::query()
