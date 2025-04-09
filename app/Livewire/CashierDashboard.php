@@ -180,6 +180,15 @@ class CashierDashboard extends Component
         $this->resetCart();
     }
 
+    public function cancelPayment()
+    {
+        $this->resetCart();
+        $this->showPaymentModal = false;
+        $this->showSuccessModal = false;
+        session()->flash('message', 'Pembayaran dibatalkan');
+    }
+
+
     public function render()
     {
         $products = Product::when($this->search, fn($query) =>
