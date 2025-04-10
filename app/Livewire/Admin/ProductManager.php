@@ -7,6 +7,7 @@ use App\Models\Product;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
+use Illuminate\Validation\Rule;
 
 class ProductManager extends Component
 {
@@ -33,13 +34,20 @@ class ProductManager extends Component
     public $showFormModal = false;
     public $productToDelete;
 
-    protected $rules = [
-        'name' => 'required|min:3',
-        'category_id' => 'required|exists:categories,id',
-        'price' => 'required|numeric|min:0',
-        'stock' => 'required|integer|min:0',
-        'description' => 'nullable|string',
-    ];
+    public function rules()
+    {
+        $uniqueRule = $this->editMode
+            ? Rule::unique('products', 'name')->ignore($this->productId)
+            : Rule::unique('products', 'name');
+
+        return [
+            'name'        => ['required', 'min:3', $uniqueRule],
+            'category_id' => 'required|exists:categories,id',
+            'price'       => 'required|numeric|min:0',
+            'stock'       => 'required|integer|min:0',
+            'description' => 'nullable|string',
+        ];
+    }
 
     public function updated($propertyName)
     {
@@ -77,21 +85,21 @@ class ProductManager extends Component
         if ($this->editMode) {
             $product = Product::findOrFail($this->productId);
             $product->update([
-                'name' => $this->name,
+                'name'        => $this->name,
                 'category_id' => $this->category_id,
                 'description' => $this->description,
-                'price' => $this->price,
-                'stock' => $this->stock,
+                'price'       => $this->price,
+                'stock'       => $this->stock,
             ]);
 
             session()->flash('message', 'Product successfully updated.');
         } else {
             Product::create([
-                'name' => $this->name,
+                'name'        => $this->name,
                 'category_id' => $this->category_id,
                 'description' => $this->description,
-                'price' => $this->price,
-                'stock' => $this->stock,
+                'price'       => $this->price,
+                'stock'       => $this->stock,
             ]);
 
             session()->flash('message', 'Product successfully created.');
@@ -103,6 +111,14 @@ class ProductManager extends Component
 
     public function confirmDelete($productId)
     {
+        $product = Product::findOrFail($productId);
+
+        // Check if product has stock
+        if ($product->stock > 0) {
+            session()->flash('message', 'Cannot delete product with remaining stock.');
+            return;
+        }
+
         $this->productToDelete = $productId;
         $this->showDeleteModal = true;
     }
@@ -110,9 +126,22 @@ class ProductManager extends Component
     public function deleteProduct()
     {
         $product = Product::findOrFail($this->productToDelete);
-        $product->delete();
 
-        session()->flash('message', 'Product successfully deleted.');
+        // Double-check stock before deletion (in case stock changed between confirmation and deletion)
+        if ($product->stock > 0) {
+            session()->flash('message', 'Cannot delete product with remaining stock.');
+            $this->showDeleteModal = false;
+            return;
+        }
+
+        try {
+            $product->delete();
+            session()->flash('message', 'Product successfully deleted.');
+        } catch (\Exception $e) {
+            // Handle foreign key constraint violations
+            session()->flash('message', 'Unable to delete this product. It may be referenced by other records.');
+        }
+
         $this->showDeleteModal = false;
     }
 
@@ -121,14 +150,13 @@ class ProductManager extends Component
         $this->showDeleteModal = false;
     }
 
-
     public function render()
     {
         $products = Product::query()
-            ->when($this->search, function($query) {
+            ->when($this->search, function ($query) {
                 return $query->where('name', 'like', '%' . $this->search . '%');
             })
-            ->when($this->categoryFilter, function($query) {
+            ->when($this->categoryFilter, function ($query) {
                 return $query->where('category_id', $this->categoryFilter);
             })
             ->orderBy('created_at', 'desc')
@@ -137,7 +165,7 @@ class ProductManager extends Component
         $categories = Category::all();
 
         return view('livewire.admin.product-manager', [
-            'products' => $products,
+            'products'   => $products,
             'categories' => $categories,
         ]);
     }

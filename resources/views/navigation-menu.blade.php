@@ -15,6 +15,12 @@
                         {{ __('Main Dashboard') }}
                     </x-nav-link>
                 </div> --}}
+                <!-- Super Admin -->
+                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                    <x-nav-link href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.dashboard')">
+                        {{ __('Admin Dashboard') }}
+                    </x-nav-link>
+                </div>
                 <!-- Admin Dashboard Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.dashboard')">
@@ -24,7 +30,7 @@
                 <!-- Kasir Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link href="{{ route('kasir') }}" :active="request()->routeIs('kasir')">
-                        {{ __('Kasir') }}
+                        {{ __('Transaksi') }}
                     </x-nav-link>
                 </div>
                 {{-- <!-- Products Links -->

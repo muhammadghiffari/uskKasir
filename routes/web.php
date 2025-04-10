@@ -1,7 +1,6 @@
 <?php
 
 use App\Livewire\Admin\Dashboard;
-
 use App\Livewire\CashierDashboard;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Admin\ProductManager;
@@ -34,7 +33,8 @@ Route::middleware([
     // Kasir
     Route::get('/kasir', CashierDashboard::class)->name('kasir');
 
-    // Struk transaksi
+    // Receipt and Reports
     Route::get('/print/receipt/{transaction}', [ReceiptController::class, 'print'])->name('print.receipt');
     Route::get('/download-receipt/{transaction}', [ReceiptController::class, 'download'])->name('receipt.download');
+    Route::post('/generate-transactions-report', [ReceiptController::class, 'generateReport'])->name('transactions.report');
 });

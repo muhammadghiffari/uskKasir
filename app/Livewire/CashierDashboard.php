@@ -10,7 +10,7 @@ use App\Models\TransactionItem;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
-
+use Livewire\Attributes\On;
 
 class CashierDashboard extends Component
 {
@@ -25,8 +25,21 @@ class CashierDashboard extends Component
     public $showPaymentModal = false;
     public $transactionCompleted = false;
     public $currentTransaction = null;
+    public $showSuccessModal = false;
+    public $errorMessage = '';
 
     protected $listeners = ['productSelected'];
+
+    // Define updatedSearch and updatedCategoryFilter to reset pagination
+    public function updatedSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedCategoryFilter()
+    {
+        $this->resetPage();
+    }
 
     public function mount()
     {
@@ -43,17 +56,20 @@ class CashierDashboard extends Component
         $this->currentTransaction = null;
     }
 
+    #[On('product-selected')]
     public function productSelected($productId)
     {
         $product = Product::find($productId);
 
         if (!$product || $product->stock <= 0) {
-            $this->dispatchBrowserEvent('alert', ['type' => 'error', 'message' => 'Produk tidak tersedia']);
+            $this->errorMessage = 'Produk tidak tersedia';
+            $this->dispatch('show-alert', ['message' => $this->errorMessage]);
             return;
         }
 
         if (isset($this->cart[$productId]) && ($this->cart[$productId]['quantity'] + 1) > $product->stock) {
-            $this->dispatchBrowserEvent('alert', ['type' => 'error', 'message' => 'Stok tidak mencukupi']);
+            $this->errorMessage = 'Stok tidak mencukupi';
+            $this->dispatch('show-alert', ['message' => $this->errorMessage]);
             return;
         }
 
@@ -62,6 +78,18 @@ class CashierDashboard extends Component
 
     public function increaseQuantity($productId)
     {
+        $product = Product::find($productId);
+
+        if (!$product) {
+            $this->errorMessage = 'Produk tidak ditemukan';
+            return;
+        }
+
+        if (isset($this->cart[$productId]) && ($this->cart[$productId]['quantity'] + 1) > $product->stock) {
+            session()->flash('error', 'Stok tidak mencukupi');
+            return;
+        }
+
         $this->updateCart($productId, 1);
     }
 
@@ -96,7 +124,7 @@ class CashierDashboard extends Component
                 $this->cart[$productId]['quantity'] = $newQuantity;
                 $this->cart[$productId]['subtotal'] = $newQuantity * $this->cart[$productId]['price'];
             } else {
-                session()->flash('error', 'Not enough stock available');
+                session()->flash('error', 'Stok tidak mencukupi');
             }
         }
 
@@ -123,7 +151,6 @@ class CashierDashboard extends Component
         $this->changeAmount = $this->cashAmount - (float) $this->total;
     }
 
-
     public function showPayment()
     {
         if (empty($this->cart)) {
@@ -133,11 +160,10 @@ class CashierDashboard extends Component
         $this->showPaymentModal = true;
     }
 
-
     public function processPayment()
     {
         if ($this->cashAmount < $this->total) {
-            session()->flash('error', 'Cash amount is less than total');
+            session()->flash('error', 'Jumlah uang kurang dari total belanja');
             return;
         }
 
@@ -168,8 +194,6 @@ class CashierDashboard extends Component
         $this->showSuccessModal = true;
     }
 
-    public $showSuccessModal = false;
-
     public function printReceipt()
     {
         return redirect()->route('receipt.download', ['transaction' => $this->currentTransaction]);
@@ -182,19 +206,19 @@ class CashierDashboard extends Component
 
     public function cancelPayment()
     {
-        $this->resetCart();
         $this->showPaymentModal = false;
         $this->showSuccessModal = false;
         session()->flash('message', 'Pembayaran dibatalkan');
     }
 
-
     public function render()
     {
-        $products = Product::when($this->search, fn($query) =>
-            $query->where('name', 'like', '%' . $this->search . '%'))
-            ->when($this->categoryFilter, fn($query) =>
-                $query->where('category_id', $this->categoryFilter))
+        $products = Product::when($this->search !== '', function ($query) {
+            $query->where('name', 'like', '%' . $this->search . '%');
+        })
+            ->when($this->categoryFilter !== '', function ($query) {
+                $query->where('category_id', $this->categoryFilter);
+            })
             ->where('stock', '>', 0)
             ->paginate(12);
 

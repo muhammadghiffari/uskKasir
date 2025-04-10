@@ -73,9 +73,46 @@
                 </div>
             </div>
 
-            <!-- Recent Transactions -->
+            <!-- Recent Transactions with Filtering -->
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-4">Recent Transactions</h3>
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                    <h3 class="text-lg font-semibold mb-2 md:mb-0">Recent Transactions</h3>
+
+                    <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
+                        <!-- Transaction Filters -->
+                        <div class="flex flex-wrap gap-2">
+                            <select wire:model.live="filterPeriod" class="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                <option value="all">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="custom">Custom Date</option>
+                            </select>
+
+                            @if($filterPeriod === 'custom')
+                            <div class="flex gap-2">
+                                <input type="date" wire:model.live="dateFrom" class="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                <input type="date" wire:model.live="dateTo" class="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                            </div>
+                            @endif
+
+                            <select wire:model.live="filterCashier" class="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm">
+                                <option value="">All Cashiers</option>
+                                @foreach($cashiers as $cashier)
+                                    <option value="{{ $cashier->id }}">{{ $cashier->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Print All Button -->
+                        <button
+                            wire:click="downloadTransactionsReport"
+                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                        >
+                            <i class="fas fa-file-pdf mr-1"></i> Cetak Rekap
+                        </button>
+                    </div>
+                </div>
 
                 <div class="overflow-x-auto">
                     <table class="min-w-full bg-white">
@@ -85,23 +122,91 @@
                                 <th class="py-2 px-4 border-b border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase">Cashier</th>
                                 <th class="py-2 px-4 border-b border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
                                 <th class="py-2 px-4 border-b border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase">Total</th>
+                                <th class="py-2 px-4 border-b border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($recentTransactions as $transaction)
+                            @forelse ($transactions as $transaction)
                                 <tr>
                                     <td class="py-2 px-4 border-b border-gray-200">{{ $transaction->code }}</td>
                                     <td class="py-2 px-4 border-b border-gray-200">{{ $transaction->user->name }}</td>
                                     <td class="py-2 px-4 border-b border-gray-200">{{ $transaction->created_at->format('d M Y H:i') }}</td>
                                     <td class="py-2 px-4 border-b border-gray-200">Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</td>
+                                    <td class="py-2 px-4 border-b border-gray-200">
+                                        <button
+                                            wire:click="toggleTransactionDetails({{ $transaction->id }})"
+                                            class="text-blue-500 hover:text-blue-700 mr-2"
+                                        >
+                                            {{ in_array($transaction->id, $expandedTransactions) ? 'Sembunyikan' : 'Lihat Detail' }}
+                                        </button>
+                                    </td>
                                 </tr>
+
+                                @if(in_array($transaction->id, $expandedTransactions))
+                                <tr>
+                                    <td colspan="5" class="py-4 px-4 border-b border-gray-200 bg-gray-50">
+                                        <div class="mb-4">
+                                            <div class="flex justify-between mb-2">
+                                                <h4 class="font-semibold">Transaction Details</h4>
+                                                <button
+                                                    wire:click="printReceipt({{ $transaction->id }})"
+                                                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded"
+                                                >
+                                                    <i class="fas fa-print mr-1"></i> Cetak Struk
+                                                </button>
+                                            </div>
+
+                                            <div class="bg-white p-3 rounded shadow-sm">
+                                                <div class="grid grid-cols-2 gap-4 mb-3">
+                                                    <div>
+                                                        <p><span class="font-semibold">Transaction ID:</span> {{ $transaction->code }}</p>
+                                                        <p><span class="font-semibold">Date:</span> {{ $transaction->created_at->format('d M Y H:i') }}</p>
+                                                        <p><span class="font-semibold">Cashier:</span> {{ $transaction->user->name }}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p><span class="font-semibold">Total Amount:</span> Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</p>
+                                                        <p><span class="font-semibold">Payment Amount:</span> Rp {{ number_format($transaction->payment_amount, 0, ',', '.') }}</p>
+                                                        <p><span class="font-semibold">Change Amount:</span> Rp {{ number_format($transaction->change_amount, 0, ',', '.') }}</p>
+                                                    </div>
+                                                </div>
+
+                                                <h5 class="font-semibold mb-2">Items</h5>
+                                                <table class="min-w-full bg-white border">
+                                                    <thead>
+                                                        <tr>
+                                                            <th class="py-1 px-2 border-b text-left text-xs font-semibold text-gray-600">Product</th>
+                                                            <th class="py-1 px-2 border-b text-right text-xs font-semibold text-gray-600">Price</th>
+                                                            <th class="py-1 px-2 border-b text-right text-xs font-semibold text-gray-600">Qty</th>
+                                                            <th class="py-1 px-2 border-b text-right text-xs font-semibold text-gray-600">Subtotal</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach($transaction->items as $item)
+                                                            <tr>
+                                                                <td class="py-1 px-2 border-b">{{ $item->product->name }}</td>
+                                                                <td class="py-1 px-2 border-b text-right">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
+                                                                <td class="py-1 px-2 border-b text-right">{{ $item->quantity }}</td>
+                                                                <td class="py-1 px-2 border-b text-right">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endif
                             @empty
                                 <tr>
-                                    <td colspan="4" class="py-2 px-4 border-b border-gray-200 text-center">No recent transactions</td>
+                                    <td colspan="5" class="py-2 px-4 border-b border-gray-200 text-center">No transactions found</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                <div class="mt-4">
+                    {{ $transactions->links() }}
                 </div>
             </div>
 
@@ -113,16 +218,18 @@
                         <a href="{{ route('admin.products') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center">
                             Manage Products
                         </a>
-                        <a href="#" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded text-center">
-                            View All Transactions
-                        </a>
+                                    <button wire:click="downloadStockReport"
+                                        class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded text-center">
+                                        Generate Stock Report
+                                    </button>
                     </div>
                 </div>
 
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
                     <h3 class="text-lg font-semibold mb-4">Stats Summary</h3>
                     <p class="mb-2"><span class="font-medium">Total Sales:</span> Rp {{ number_format($totalSales, 0, ',', '.') }}</p>
-                    <p><span class="font-medium">Recent Sales:</span> Rp {{ $recentTransactions->count() > 0 ? number_format($totalSales / \App\Models\Transaction::count(), 0, ',', '.') : 0 }}</p>
+                    <p class="mb-2"><span class="font-medium">{{ $filterPeriod === 'today' ? "Today's" : ($filterPeriod === 'week' ? 'This Week\'s' : ($filterPeriod === 'month' ? 'This Month\'s' : 'Filtered')) }} Sales:</span> Rp {{ number_format($filteredTotalSales, 0, ',', '.') }}</p>
+                    <p><span class="font-medium">Total Items Sold:</span> {{ number_format($totalItemsSold, 0, ',', '.') }}</p>
                 </div>
             </div>
         </div>
